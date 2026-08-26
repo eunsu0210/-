@@ -12,6 +12,9 @@ export type ExplainApiResponse = {
   source?: 'ai' | 'fallback'
 }
 
+// 인메모리 캐시 (3초 이내 빠른 응답 최적화)
+const cache = new Map<string, ExplainApiResponse>()
+
 export async function POST(req: Request) {
   try {
     const body = await req.json()
@@ -26,6 +29,11 @@ export async function POST(req: Request) {
       )
     }
 
+    const cacheKey = `${query.toLowerCase()}_v${variantIndex}_regen${regenerate}`
+    if (!regenerate && cache.has(cacheKey)) {
+      return NextResponse.json(cache.get(cacheKey)!)
+    }
+
     const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
 
     // Gemini API가 설정되어 있다면 AI 생성 시도
@@ -33,6 +41,7 @@ export async function POST(req: Request) {
       try {
         const aiResult = await fetchFromGemini(query, apiKey, regenerate, variantIndex)
         if (aiResult) {
+          cache.set(cacheKey, aiResult)
           return NextResponse.json(aiResult)
         }
       } catch (err) {
@@ -42,8 +51,9 @@ export async function POST(req: Request) {
 
     // Fallback 또는 기본 사전 조회 로직
     const localResult = getLocalExplanation(query, variantIndex)
+    cache.set(cacheKey, localResult)
     return NextResponse.json(localResult)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Explain API error:', error)
     return NextResponse.json(
       { status: 'error', message: '설명을 생성하는 중 오류가 발생했습니다.' },
