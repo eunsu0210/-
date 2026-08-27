@@ -23,9 +23,9 @@ gantt
     section Sprint 1
     기반 설정 & UI 레이아웃 구축    :done, s1, 2026-08-26, 2026-08-27
     section Sprint 2
-    AI 설명 생성 연동 & Core API    :active, s2, 2026-08-27, 3d
+    AI 설명 생성 연동 & Core API    :done, s2, 2026-08-27, 2026-08-27
     section Sprint 3
-    예외 처리 6종 및 인터랙션 완성  :s3, after s2, 3d
+    예외 처리 6종 및 인터랙션 완성  :active, s3, 2026-08-27, 3d
     section Sprint 4
     UI/UX Polish, 성능 최적화 & 검증:s4, after s3, 2d
 ```
@@ -53,18 +53,20 @@ gantt
 
 ---
 
-### ⚡ Sprint 2: AI 설명 생성 엔진 & Core API 연동 (Engine & Response)
+### ⚡ Sprint 2: AI 설명 생성 엔진 & Core API 연동 (Engine & Response) [완료 ✅]
 
-* **목표**: 입력된 보안 용어를 해석하여 3초 이내 3요소(정의/비유/역할)를 생성해내는 API 연동
-* **주요 과제**:
-  1. **Google Gemini API 또는 LLM 연동 설정**:
-     - 환경 변수 (`GEMINI_API_KEY`) 및 `@google/genai` SDK 연결
+* **상태**: **완료 (Completed)** (2026-08-27)
+* **목표**: 입력된 보안 용어를 해석하여 3초 이내 3요소(정의/비유/역할)를 생성해내는 API 연동 및 타임아웃 처리
+* **주요 성과**:
+  1. **Google Gemini API 연동 설정**:
+     - `GEMINI_API_KEY` 환경 변수 구성 및 `gemini-2.5-flash` / `gemini-2.0-flash` 모델 연동
+     - API 키 부재 또는 외부 오류 시 로컬 사전(`lib/mock-terms.ts`) 자동 폴백 메커니즘 구축
   2. **API Route 구축 (`/api/explain`)**:
-     - 프롬프트 엔지니어링: 보안 용어 해석, 3요소(정의, 일상 비유, 보안 역할) JSON 파싱 강제
-     - 3초 이내 빠른 응답을 위한 스트리밍 또는 경량 모델(Gemini 2.5 Flash 등) 채택
+     - 프롬프트 엔지니어링 및 `responseMimeType: 'application/json'` 응답 강제 (① 한 줄 정의, ② 일상 비유 설명, ③ 보안 역할 3요소)
+     - 검색어 및 재생성 시드별 인메모리 결과 캐싱(`cacheMap`) 최적화
   3. **[5-5] 응답 지연 및 타임아웃 핸들링**:
-     - 3초 경과 시 "설명을 찾고 있어요…" 상태 유지
-     - 10초 초과 시 타임아웃 간주 → "응답이 지연되고 있어요. 다시 시도해주세요." 메시지 및 재시도 버튼 노출
+     - 3초 경과 시 `"설명을 찾고 있어요…"` 로딩 상태 유지
+     - 10초 초과 시 Client AbortController 요청 자동 취소 ➔ `"응답이 지연되고 있어요. 다시 시도해주세요."` 상태 및 재시도 버튼 노출 연동 완료
 
 ---
 

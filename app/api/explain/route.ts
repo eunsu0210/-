@@ -129,7 +129,7 @@ ${regenerate ? `(주의: 기존과 다른 새로운 비유 방식을 사용하�
 JSON 이외의 어떠한 설명이나 마크다운 백틱 문장도 포함하지 마세요.
 `
 
-  const response = await fetch(
+  let response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
@@ -149,6 +149,30 @@ JSON 이외의 어떠한 설명이나 마크다운 백틱 문장도 포함하지
       }),
     }
   )
+
+  if (!response.ok) {
+    // 2.5-flash 호환 시도 후 2.0-flash 로 차선책 연동
+    response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            temperature: regenerate ? 0.8 : 0.4,
+            responseMimeType: 'application/json',
+          },
+        }),
+      }
+    )
+  }
 
   if (!response.ok) {
     throw new Error(`Gemini API HTTP Error: ${response.status}`)
