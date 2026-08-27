@@ -1,7 +1,7 @@
 # 보안 용어 쉬운 비유 설명 서비스 — 개발 계획서 (Development Plan)
 
-> **문서 버전**: v1.0.0  
-> **생성일**: 2026-08-26  
+> **문서 버전**: v1.1.0  
+> **최종 수정일**: 2026-08-27  
 > **기반 문서**: [PRD.md](../PRD.md)
 
 ---
@@ -21,9 +21,9 @@ gantt
     title 개발 스프린트 로드맵
     dateFormat  YYYY-MM-DD
     section Sprint 1
-    기반 설정 & UI 레이아웃 구축    :active, s1, 2026-08-26, 3d
+    기반 설정 & UI 레이아웃 구축    :done, s1, 2026-08-26, 2026-08-27
     section Sprint 2
-    AI 설명 생성 연동 & Core API    :s2, after s1, 3d
+    AI 설명 생성 연동 & Core API    :active, s2, 2026-08-27, 3d
     section Sprint 3
     예외 처리 6종 및 인터랙션 완성  :s3, after s2, 3d
     section Sprint 4
@@ -34,21 +34,22 @@ gantt
 
 ## 3. 스프린트별 상세 계획 (Sprint Specification)
 
-### 🚀 Sprint 1: 프로젝트 기반 설정 & 단일 화면 UI 레이아웃 (Visual Foundation)
+### 🚀 Sprint 1: 프로젝트 기반 설정 & 단일 화면 UI 레이아웃 (Visual Foundation) [완료 ✅]
 
+* **상태**: **완료 (Completed)** (2026-08-27)
 * **목표**: 1 Screen 핵심 UI 뼈대 구축, 컴포넌트 모듈화, 빈 입력 예외 처리 UI 구현
-* **주요 과제**:
+* **주요 성과**:
   1. **디자인 시스템 및 레이아웃**:
-     - Modern & Premium 다크/글래스모피즘 테마 및 Google Fonts(Inter/Outfit 등) 설정
-     - 단일 화면 메인 레이아웃 (`app/page.tsx`) 완성
+     - Modern & Premium 다크/글래스모피즘 테마 및 Google Fonts(`Noto Sans KR`, `Outfit`, `Gowun Batang`) 연동 완료
+     - 단일 화면 메인 레이아웃 (`app/page.tsx`) 구축
   2. **핵심 UI 컴포넌트 분리**:
-     - `SearchBar`: 입력창, 검색 버튼, Enter 키 바인딩, 포커스 제어
+     - `SearchBar`: 입력창, 검색 버튼, Enter 키 바인딩 (한글 IME 중복 방지), 포커스 제어
      - `ResultCard`: 용어명, ①한 줄 정의, ②일상 비유 설명, ③보안 역할 설명
-     - `StatusIndicator`: 로딩 스피너 및 에러/안내 메시지 뷰
+     - `StatusIndicator`: 로딩 스피너 및 각 상태(`initial`, `loading`, `irrelevant`, `typo`, `error`, `delayed`) 메시지 패널 통합
   3. **기초 상태 관리**:
-     - `idle`, `loading`, `success`, `error`, `invalid_input` 상태 정의
+     - `idle/initial`, `loading`, `result`, `irrelevant`, `typo`, `error`, `delayed` 상태 연동
   4. **[5-1] 빈 입력 예외 처리**:
-     - 빈 입력 시 검색 방지, "검색어를 입력해주세요" 툴팁/안내문구 및 포커스 유지
+     - 빈 입력 시 검색 방지, `"검색어를 입력해주세요"` 안내 문구, `animate-shake` 미세 경고 및 포커스 유지 처리 완료
 
 ---
 
