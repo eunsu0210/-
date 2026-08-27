@@ -86,14 +86,39 @@
 
 ---
 
-## 4. Sprint 7 — 배포 & 운영 (다음 단계, 미착수)
+## 4. Sprint 7 — 배포 & 운영 ✅ 완료 (2026-08-27)
 
-- [ ] **환경변수 주입**: 배포 플랫폼(Vercel 등) 프로젝트 설정에 `GEMINI_API_KEY` 등록 (`.env.local` 은 로컬 전용)
-- [ ] **키 회전 절차 문서화**: AI Studio에서 재발급 → 플랫폼 env 교체 → 재배포. 유출 시 즉시 폐기
-- [ ] **리전/런타임 확인**: `route.ts` 는 `runtime = 'nodejs'`. Edge 전환 시 `AbortController`/타임아웃 동작 재검증
-- [ ] **에러 모니터링**: `[Gemini] ⚠️` 경고 로그를 Sentry 등으로 수집, 폴백률 대시보드화
-- [ ] **부하 테스트**: 동시 20~50 요청에서 p95 응답시간 및 503 비율 측정
-- [ ] **모델 갱신 루틴**: 분기별 `ListModels` 로 신규 flash 계열 확인, 체인 상단 교체 검토
+- [x] **배포/키 회전 런북**: [ops-runbook.md](./ops-runbook.md) 신규 — 환경변수 주입(플랫폼 env, `NEXT_PUBLIC_` 금지), 키 회전 5단계, 유출 긴급 대응, 장애 플레이북
+- [x] **런타임/리전 명시**: `route.ts`·`health/route.ts` `runtime = 'nodejs'` 고정. 인메모리 상태(cache/rate-limit/metrics)의 인스턴스 로컬 특성과 다중 인스턴스 시 교체 지점을 런북에 문서화
+- [x] **인프로세스 모니터링** (`lib/metrics.ts`): `ai`/`fallback`/`error`/`rateLimited`/`reconciled` 카운터 + p50/p95/p99 지연 → `GET /api/health` 의 `metrics` 필드로 노출. 외부 APM 없이 `fallbackRate` 관찰 가능
+- [x] **부하 테스트 스크립트** (`scripts/load-test.mjs`): 동시성 지정, p50/p95/p99·폴백·429 비율·SLA 충족률 출력
+- [x] **모델 갱신 루틴** (`scripts/check-models.mjs`): ListModels + flash 후보 지연 실측 → 체인 1순위 추천
+- [ ] **Sentry/외부 uptime 연결**: 배포 플랫폼 확정 후 (런북 4-2에 절차 기재)
+
+### 4-1. 모델 재실측 결과 (`scripts/check-models.mjs`, 2026-08-27)
+
+| 모델 | 지연 | 판정 |
+|------|------|------|
+| `gemini-3.1-flash-lite` | 1.22s | ✅ 최속 (핀 버전) |
+| `gemini-3.1-flash-lite-preview` | 1.49s | ✅ |
+| `gemini-3.5-flash-lite` | 1.59s | ✅ |
+| `gemini-flash-lite-latest` | 1.75s | ✅ (자동 추적 alias) |
+| `gemini-flash-latest` | 4.63s | 🟡 SLA 밖 |
+| `gemini-3.6-flash` | 7.65s | 🟡 품질 폴백용 |
+| `gemini-3.5-flash` / `3.7-flash` | timeout / 503 | ❌ |
+
+→ **체인 갱신**: `gemini-flash-lite-latest` → `gemini-3.1-flash-lite` → `gemini-3.6-flash`
+
+### 4-2. 부하 테스트 결과 (`node scripts/load-test.mjs 18 8`)
+
+| 지표 | 값 |
+|------|-----|
+| 처리량 | 4.7 req/s (동시성 8) |
+| HTTP 200 / 5xx / 오류 | 18 / 0 / 0 |
+| 응답 소스 | ai 15 · fallback 3 (fallbackRate 0.167) |
+| 지연 | p50 1641ms · p95 2208ms · max 2208ms |
+| **3초 SLA 충족** | **18/18 (100%)** |
+| `/api/health` metrics | 부하 결과와 일치 확인 (total 18, ai 15, p95 2125ms) |
 
 ---
 
@@ -101,8 +126,8 @@
 
 | 항목 | 값 |
 |------|-----|
-| 기본 모델 | `gemini-flash-lite-latest` (실측 ~1.3s) |
-| 품질 폴백 모델 | `gemini-3.6-flash` (~7s) |
+| 모델 체인 | `gemini-flash-lite-latest` → `gemini-3.1-flash-lite` → `gemini-3.6-flash` → 로컬 사전 |
+| 지표 확인 | `GET /api/health` 의 `metrics` (fallbackRate, latency p95 등) |
 | 최종 폴백 | 로컬 사전 `lib/mock-terms.ts` (30개 용어) |
 | 레이트리밋 | IP당 60초 20회 (`lib/rate-limit.ts`) |
 | 캐시 | LRU 상한 500 (`lib/lru-cache.ts`) |

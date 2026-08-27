@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { findTerm, getExplanation, suggestTerm } from '@/lib/mock-terms'
 import { LruCache } from '@/lib/lru-cache'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { recordOutcome, recordReconcile } from '@/lib/metrics'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -29,10 +30,12 @@ const RATE_WINDOW_MS = 60_000
 const GEMINI_API_VERSION = 'v1beta'
 
 // 모델 우선순위. GEMINI_MODELS 환경변수(쉼표 구분)로 오버라이드 가능.
-// 2026-08 실측: gemini-flash-lite-latest ≈ 1.3s + 완전한 3요소 응답 → 3초 SLA 충족 (기본).
-//   gemini-3.6-flash ≈ 7s (품질↑, 지연↑) → 1차 실패 시 품질 보정용 폴백.
-//   gemini-flash-latest 는 현재 폭주(503)로 응답까지 50s+ 소요되어 기본 체인에서 제외.
-const DEFAULT_MODELS = ['gemini-flash-lite-latest', 'gemini-3.6-flash']
+// scripts/check-models.mjs 2026-08-27 실측:
+//   gemini-flash-lite-latest   ≈ 1.75s  (자동 추적 alias — 기본)
+//   gemini-3.1-flash-lite      ≈ 1.22s  (핀 버전, 가장 빠름 — 1차 실패 시)
+//   gemini-3.6-flash           ≈ 7.7s   (품질↑·지연↑ — 마지막 AI 시도)
+//   gemini-flash-latest/3.5-flash 는 4.6s~timeout 으로 SLA 밖 → 제외
+const DEFAULT_MODELS = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.6-flash']
 const GEMINI_MODELS = (process.env.GEMINI_MODELS || '')
   .split(',')
   .map((m) => m.trim())
@@ -55,11 +58,13 @@ const MAX_ROLE_LEN = 220
 // responseMimeType(JSON 강제) + 프롬프트 지시 + safeJsonParse 조합으로 처리한다.
 
 export async function POST(req: Request) {
+  const reqStart = Date.now()
   try {
     // ── 레이트리밋 ──────────────────────────────────────────────
     const ip = getClientIp(req)
     const rl = checkRateLimit(ip, RATE_LIMIT, RATE_WINDOW_MS)
     if (!rl.allowed) {
+      recordOutcome('rateLimited')
       return NextResponse.json(
         {
           status: 'error',
@@ -90,7 +95,10 @@ export async function POST(req: Request) {
     const cacheKey = `${query.toLowerCase()}_v${variantIndex}_regen${regenerate}`
     if (!regenerate) {
       const cached = cache.get(cacheKey)
-      if (cached) return NextResponse.json(cached)
+      if (cached) {
+        recordOutcome(cached.source === 'ai' ? 'ai' : 'fallback', Date.now() - reqStart)
+        return NextResponse.json(cached)
+      }
     }
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
@@ -100,9 +108,12 @@ export async function POST(req: Request) {
       try {
         let aiResult = await fetchFromGemini(query, apiKey, regenerate, variantIndex)
         if (aiResult) {
+          const before = aiResult.status
           aiResult = reconcileWithDictionary(query, aiResult, variantIndex)
+          if (before !== aiResult.status) recordReconcile()
           aiResult = clampLengths(aiResult)
           if (!regenerate) cache.set(cacheKey, aiResult)
+          recordOutcome(aiResult.source === 'ai' ? 'ai' : 'fallback', Date.now() - reqStart)
           return NextResponse.json(aiResult)
         }
       } catch (err) {
@@ -113,9 +124,11 @@ export async function POST(req: Request) {
     // Fallback: 로컬 사전 조회
     const localResult = getLocalExplanation(query, variantIndex)
     if (!regenerate) cache.set(cacheKey, localResult)
+    recordOutcome('fallback', Date.now() - reqStart)
     return NextResponse.json(localResult)
   } catch (error: unknown) {
     console.error('[API] /api/explain 오류:', error)
+    recordOutcome('error')
     return NextResponse.json(
       { status: 'error', message: '설명을 생성하는 중 오류가 발생했습니다.' },
       { status: 500 }

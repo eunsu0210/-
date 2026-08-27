@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { snapshot } from '@/lib/metrics'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,6 +21,7 @@ export async function GET() {
       mode: 'fallback-only',
       keyConfigured: false,
       note: 'GEMINI_API_KEY 미설정 — 로컬 사전 폴백으로만 동작합니다.',
+      metrics: snapshot(),
     })
   }
 
@@ -44,11 +46,11 @@ export async function GET() {
 
     if (!res.ok) {
       return NextResponse.json(
-        { ok: false, keyConfigured: true, model: PRIMARY_MODEL, httpStatus: res.status, latencyMs },
+        { ok: false, keyConfigured: true, model: PRIMARY_MODEL, httpStatus: res.status, latencyMs, metrics: snapshot() },
         { status: 503 }
       )
     }
-    return NextResponse.json({ ok: true, keyConfigured: true, model: PRIMARY_MODEL, latencyMs })
+    return NextResponse.json({ ok: true, keyConfigured: true, model: PRIMARY_MODEL, latencyMs, metrics: snapshot() })
   } catch (err: unknown) {
     const e = err as { name?: string; message?: string }
     return NextResponse.json(
@@ -58,6 +60,7 @@ export async function GET() {
         model: PRIMARY_MODEL,
         error: e.name === 'AbortError' ? 'timeout(8s)' : e.message || String(err),
         latencyMs: Date.now() - startedAt,
+        metrics: snapshot(),
       },
       { status: 503 }
     )
