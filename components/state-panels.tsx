@@ -149,7 +149,13 @@ export function TypoPanel({
   )
 }
 
-export function ErrorPanel({ onRetry }: { onRetry: () => void }) {
+export function ErrorPanel({
+  onRetry,
+  message,
+}: {
+  onRetry: () => void
+  message?: string
+}) {
   return (
     <Panel>
       <span className="flex size-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive ring-1 ring-destructive/20">
@@ -157,9 +163,11 @@ export function ErrorPanel({ onRetry }: { onRetry: () => void }) {
       </span>
       <div className="flex flex-col gap-1.5">
         <p role="alert" className="text-base font-bold text-card-foreground">
-          설명을 불러오지 못했어요.
+          {message ? message : '설명을 불러오지 못했어요.'}
         </p>
-        <p className="text-sm text-muted-foreground">다시 시도해주세요.</p>
+        <p className="text-sm text-muted-foreground">
+          {message ? '' : '다시 시도해주세요.'}
+        </p>
       </div>
       <Button
         variant="outline"

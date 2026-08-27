@@ -3,7 +3,7 @@
 > **문서 버전**: v1.3.0  
 > **최종 수정일**: 2026-08-27 (실제 Gemini 키 도입 후 AI 경로 재정비)  
 > **기반 문서**: [PRD.md](../PRD.md) · [ai-enablement-plan.md](./ai-enablement-plan.md)  
-> **프로젝트 상태**: ✅ Sprint 1~4 UI/UX 완료 · ✅ Sprint 5 (AI 실경로 활성화) 완료 · ⬜ Sprint 6~7 예정
+> **프로젝트 상태**: ✅ Sprint 1~5 완료 · ✅ Sprint 6 (품질·신뢰성) 완료 · ⬜ Sprint 7 (배포·운영) 예정
 
 > ⚠️ **정정 (2026-08-27)**: Sprint 2 에서 "완료"로 표기했던 Gemini 연동은 실제 키 투입 시 동작하지 않았다
 > (존재하지 않는 모델명, `v1` 엔드포인트, 키가 `.gitignore` 밖 `.env` 에 노출 등). 원인·조치·검증 결과는
@@ -142,7 +142,7 @@ gantt
 | Sprint 3 | 예외 처리 6종 (PRD 5-1시5-6) 완비 | ✅ 완료 |
 | Sprint 4 | Visual Polish, Micro-animations & QA 검증 | ✅ 완료 |
 | Sprint 5 | 실제 Gemini 키 도입 · AI 경로 활성화 · 시크릿 하드닝 | ✅ 완료 (2026-08-27) |
-| Sprint 6 | 품질·비용·레이트리밋·폴백 사전 확장 | ⬜ 예정 |
+| Sprint 6 | few-shot·길이가드·오탐보정·레이트리밋·LRU캐시·폴백 사전 8→30·헬스체크 | ✅ 완료 (2026-08-27) |
 | Sprint 7 | 배포 환경변수·키 회전·모니터링·부하 테스트 | ⬜ 예정 |
 
 ### 파일 구성 (해당 코드)

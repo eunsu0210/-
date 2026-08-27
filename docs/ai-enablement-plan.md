@@ -53,28 +53,40 @@
 
 ---
 
-## 3. Sprint 6 — 품질 · 비용 · 신뢰성 (다음 단계, 미착수)
+## 3. Sprint 6 — 품질 · 비용 · 신뢰성 ✅ 완료 (2026-08-27)
 
 ### 3-1. 응답 품질
-- [ ] **프롬프트 예시 고정(few-shot)**: 좋은 `analogy` 3~4개를 프롬프트에 박아 톤·길이 편차 축소
-- [ ] **길이 가드**: `definition` 40자 초과 / `analogy` 4문장 초과 시 서버에서 1회 재요청 또는 절삭
-- [ ] **오탐 보정**: 정상 용어를 `typo`로 잘못 분류하는 경우 대비 — `mock-terms` 의 정식 용어/별칭과 먼저 대조해 확실한 건 AI 판정보다 우선
-- [ ] **금칙 처리**: 공격 실습용 페이로드·악성코드 요청은 `irrelevant` 로 유도하는 지시문 추가
+- [x] **프롬프트 few-shot 고정**: `buildPrompt` 에 좋은 예시 3종(success/irrelevant/typo) 삽입 → 톤·형식 편차 감소
+- [x] **길이 가드**: 서버에서 `definition` 60자 / `analogy` 320자 / `role` 220자 초과 시 문장 경계 기준 절삭 (`clampLengths`, `truncate`). 프롬프트 자체도 45/200/140자 지침으로 강화
+- [x] **오탐 보정** (`reconcileWithDictionary`): AI가 `typo`/`irrelevant` 로 응답했지만 `findTerm(query)` 이 정확히 일치하면 사전 설명으로 `success` 되돌림
+- [x] **금칙 처리**: `SYSTEM_INSTRUCTION` 에 "공격 실습·악성코드 제작·실제 페이로드 요청은 개념 설명만 하거나 irrelevant" 지시 추가
+- [x] **긴 입력 방어**: 80자 초과 쿼리는 AI 호출 없이 `"너무 긴 문장이에요…"` 반환
 
 ### 3-2. 비용 / 레이트리밋
-- [ ] **IP 기준 레이트리밋** (`/api/explain`): 예) 분당 20회. Upstash Redis 또는 in-memory 슬라이딩 윈도우
-- [ ] **캐시 개선**: 현재 `Map` (프로세스 메모리, 재시작 시 소멸, 무한 증가). → LRU 상한(예: 500) 적용, 선택적으로 지속 캐시(KV)
-- [ ] **재생성 남용 방지**: 동일 용어 재생성 횟수 소프트 캡(예: 세션당 5회) — PRD 5-6 은 "기본 무제한"이므로 UX 경고 수준
-- [ ] **토큰 사용량 로깅**: `usageMetadata` 를 로그로 남겨 일일 비용 추적
+- [x] **IP 기준 레이트리밋** (`lib/rate-limit.ts`): 인메모리 슬라이딩 윈도우, IP당 60초 20회. 초과 시 `429` + `Retry-After` 헤더 + 친절 메시지
+- [x] **LRU 캐시** (`lib/lru-cache.ts`): 무한 증가 `Map` → 상한 500 LRU 로 교체
+- [x] **토큰 사용량 로깅**: 성공 응답 로그에 `usageMetadata`(prompt+candidates 토큰) 기록
+- [ ] **재생성 소프트 캡**: 세션당 재생성 횟수 경고 — 미착수 (PRD 5-6 "기본 무제한"이라 우선순위 낮음)
+- [ ] **지속 캐시(KV)**: 다중 인스턴스 배포 시 필요 — Sprint 7 에서 배포 형태 확정 후 결정
 
 ### 3-3. 신뢰성
-- [ ] **폴백 사전 확장**: 현재 8개 용어. 자주 검색될 상위 50~100개 보안 용어로 확대 (AI 장애 시 체감 품질 유지)
-- [ ] **부분 실패 UX**: `source: 'fallback'` 일 때 결과 카드에 "사전 기반 설명" 미세 표기 (선택)
-- [ ] **헬스체크**: `GET /api/explain?health=1` → 모델 1회 핑, 배포 모니터링용
+- [x] **폴백 사전 확장**: `lib/mock-terms.ts` 8개 → **30개** (악성코드·트로이 목마·웜·스파이웨어·백도어·키로거·봇넷·스미싱·파밍·스푸핑·스니핑·XSS·CSRF·SQL 인젝션·무차별 대입·제로 트러스트·샌드박스·해시·전자서명·APT·사회공학·루트킷 등 추가)
+- [x] **부분 실패 UX**: `source: 'fallback'` 일 때 `ResultCard` 헤더에 "사전 기반 설명" 뱃지. 레이트리밋 등 API 메시지는 `ErrorPanel` 에 그대로 노출
+- [x] **헬스체크**: `GET /api/health` → 기본 모델 1회 핑, `{ok, model, latencyMs, keyConfigured}` 반환
+
+### 3-4. 검증 결과 (2026-08-27, 실 서버)
+
+| 항목 | 결과 |
+|------|------|
+| `GET /api/health` | `{ok:true, model:"gemini-flash-lite-latest", latencyMs:871}` |
+| 신규 사전 용어(봇넷·스미싱·루트킷 등) | 전부 `success`, 1.3~1.8s, 길이 가드 내 |
+| 80자 초과 입력 | AI 호출 없이 `"너무 긴 문장이에요…"` 반환 |
+| 레이트리밋 | 28회 중 14회 통과 / 14회 `429` + `Retry-After: 52s` |
+| `tsc --noEmit` / `next build` | exit 0 (`/api/explain`, `/api/health` 모두 dynamic) |
 
 ---
 
-## 4. Sprint 7 — 배포 & 운영 (미착수)
+## 4. Sprint 7 — 배포 & 운영 (다음 단계, 미착수)
 
 - [ ] **환경변수 주입**: 배포 플랫폼(Vercel 등) 프로젝트 설정에 `GEMINI_API_KEY` 등록 (`.env.local` 은 로컬 전용)
 - [ ] **키 회전 절차 문서화**: AI Studio에서 재발급 → 플랫폼 env 교체 → 재배포. 유출 시 즉시 폐기
@@ -91,7 +103,10 @@
 |------|-----|
 | 기본 모델 | `gemini-flash-lite-latest` (실측 ~1.3s) |
 | 품질 폴백 모델 | `gemini-3.6-flash` (~7s) |
-| 최종 폴백 | 로컬 사전 `lib/mock-terms.ts` (8개 용어) |
+| 최종 폴백 | 로컬 사전 `lib/mock-terms.ts` (30개 용어) |
+| 레이트리밋 | IP당 60초 20회 (`lib/rate-limit.ts`) |
+| 캐시 | LRU 상한 500 (`lib/lru-cache.ts`) |
+| 헬스체크 | `GET /api/health` |
 | 키 위치 | `.env.local` → `GEMINI_API_KEY` (gitignore 처리됨) |
 | 모델 오버라이드 | `.env.local` 에 `GEMINI_MODELS=a,b,c` |
 | 서버 타임아웃 | 모델당 7s / 전체 AI 예산 9s |

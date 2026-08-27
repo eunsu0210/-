@@ -17,6 +17,7 @@ type ResultCardProps = {
   variantCount: number
   isRerolling: boolean
   onReroll: () => void
+  source?: 'ai' | 'fallback'
 }
 
 export function ResultCard({
@@ -26,6 +27,7 @@ export function ResultCard({
   variantCount,
   isRerolling,
   onReroll,
+  source,
 }: ResultCardProps) {
   return (
     <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-[0_1px_0_oklch(0.9_0.02_225),0_16px_40px_-20px_oklch(0.5_0.08_240/0.35)] transition-shadow duration-300 hover:shadow-[0_1px_0_oklch(0.9_0.02_225),0_20px_48px_-16px_oklch(0.5_0.08_240/0.45)]">
@@ -40,9 +42,16 @@ export function ResultCard({
             {term}
           </h2>
         </div>
-        <p className="rounded-full bg-primary/8 px-3 py-1 text-xs font-semibold text-primary">
-          설명 {variantIndex + 1} / {variantCount}
-        </p>
+        <div className="flex flex-col items-end gap-1.5">
+          <p className="rounded-full bg-primary/8 px-3 py-1 text-xs font-semibold text-primary">
+            설명 {variantIndex + 1} / {variantCount}
+          </p>
+          {source === 'fallback' ? (
+            <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+              사전 기반 설명
+            </span>
+          ) : null}
+        </div>
       </header>
 
       {/* 카드 본문 */}

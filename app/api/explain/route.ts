@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { findTerm, getExplanation, suggestTerm } from '@/lib/mock-terms'
+import { LruCache } from '@/lib/lru-cache'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -16,8 +18,12 @@ export type ExplainApiResponse = {
   model?: string
 }
 
-// 인메모리 캐시 (빠른 응답 최적화)
-const cache = new Map<string, ExplainApiResponse>()
+// 상한이 있는 인메모리 캐시 (빠른 응답 최적화 + 메모리 누수 방지)
+const cache = new LruCache<ExplainApiResponse>(500)
+
+// 레이트리밋: IP당 60초에 20회
+const RATE_LIMIT = 20
+const RATE_WINDOW_MS = 60_000
 
 // Gemini generateContent 엔드포인트 버전 (systemInstruction + JSON 강제는 v1beta 필요)
 const GEMINI_API_VERSION = 'v1beta'
@@ -38,6 +44,11 @@ const PER_MODEL_TIMEOUT_MS = 7000
 // 이 시간을 넘기면 남은 모델 시도를 포기하고 폴백으로 전환.
 const TOTAL_AI_BUDGET_MS = 9000
 
+// 응답 길이 가드 (초과 시 서버에서 절삭)
+const MAX_DEFINITION_LEN = 60
+const MAX_ANALOGY_LEN = 320
+const MAX_ROLE_LEN = 220
+
 // NOTE: generationConfig.responseSchema 는 의도적으로 사용하지 않는다.
 // 느슨한(optional) 스키마를 주면 flash-lite 계열이 status/term 만 채우고
 // definition·analogy·role 을 생략해버리는 현상이 확인됨(2026-08). 대신
@@ -45,6 +56,19 @@ const TOTAL_AI_BUDGET_MS = 9000
 
 export async function POST(req: Request) {
   try {
+    // ── 레이트리밋 ──────────────────────────────────────────────
+    const ip = getClientIp(req)
+    const rl = checkRateLimit(ip, RATE_LIMIT, RATE_WINDOW_MS)
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          message: `요청이 많아요. ${rl.retryAfterSec}초 후 다시 시도해주세요.`,
+        },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } }
+      )
+    }
+
     const body = await req.json()
     const query = (body.query || '').trim()
     const regenerate = Boolean(body.regenerate)
@@ -56,10 +80,17 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
+    if (query.length > 80) {
+      return NextResponse.json(
+        { status: 'irrelevant', message: '너무 긴 문장이에요. 궁금한 용어 하나만 입력해보세요.' },
+        { status: 200 }
+      )
+    }
 
     const cacheKey = `${query.toLowerCase()}_v${variantIndex}_regen${regenerate}`
-    if (!regenerate && cache.has(cacheKey)) {
-      return NextResponse.json(cache.get(cacheKey)!)
+    if (!regenerate) {
+      const cached = cache.get(cacheKey)
+      if (cached) return NextResponse.json(cached)
     }
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
@@ -67,8 +98,10 @@ export async function POST(req: Request) {
     // Gemini API 키가 있으면 AI 생성 시도
     if (apiKey) {
       try {
-        const aiResult = await fetchFromGemini(query, apiKey, regenerate, variantIndex)
+        let aiResult = await fetchFromGemini(query, apiKey, regenerate, variantIndex)
         if (aiResult) {
+          aiResult = reconcileWithDictionary(query, aiResult, variantIndex)
+          aiResult = clampLengths(aiResult)
           if (!regenerate) cache.set(cacheKey, aiResult)
           return NextResponse.json(aiResult)
         }
@@ -87,6 +120,51 @@ export async function POST(req: Request) {
       { status: 'error', message: '설명을 생성하는 중 오류가 발생했습니다.' },
       { status: 500 }
     )
+  }
+}
+
+/**
+ * AI가 정상 용어를 typo/irrelevant 로 잘못 분류한 경우, 로컬 사전에
+ * 정확히 일치하는 항목이 있으면 그것을 신뢰해 success 로 되돌린다.
+ * (짧은 한글 용어에서 flash-lite 가 오탐하는 사례 방어)
+ */
+function reconcileWithDictionary(
+  query: string,
+  aiResult: ExplainApiResponse,
+  variantIndex: number
+): ExplainApiResponse {
+  if (aiResult.status === 'success') return aiResult
+
+  const known = findTerm(query)
+  if (known) {
+    const ex = getExplanation(known, variantIndex)
+    console.log(`[Reconcile] AI=${aiResult.status} 이지만 사전에 '${known.term}' 존재 → success 로 보정`)
+    return {
+      status: 'success',
+      term: known.term,
+      definition: ex.definition,
+      analogy: ex.analogy,
+      role: ex.role,
+      source: 'fallback',
+    }
+  }
+  return aiResult
+}
+
+function truncate(text: string, max: number): string {
+  if (!text || text.length <= max) return text
+  const cut = text.slice(0, max)
+  const lastStop = Math.max(cut.lastIndexOf('.'), cut.lastIndexOf('。'), cut.lastIndexOf('다'))
+  return (lastStop > max * 0.5 ? cut.slice(0, lastStop + 1) : cut.trimEnd() + '…')
+}
+
+function clampLengths(r: ExplainApiResponse): ExplainApiResponse {
+  if (r.status !== 'success') return r
+  return {
+    ...r,
+    definition: truncate(r.definition || '', MAX_DEFINITION_LEN),
+    analogy: truncate(r.analogy || '', MAX_ANALOGY_LEN),
+    role: truncate(r.role || '', MAX_ROLE_LEN),
   }
 }
 
@@ -122,22 +200,35 @@ function getLocalExplanation(query: string, variantIndex: number): ExplainApiRes
 
 const SYSTEM_INSTRUCTION =
   '당신은 보안 전공 초보자와 교육생을 위해 어려운 보안 용어를 일상적인 비유로 쉽게 설명해주는 친절한 보안 교육 전문가입니다. ' +
-  '반드시 지정된 JSON 형식으로만 응답하고, 마크다운 백틱이나 부가 설명을 절대 포함하지 마세요.'
+  '항상 지정된 JSON 형식으로만 응답하고, 마크다운 백틱이나 부가 설명을 절대 포함하지 마세요. ' +
+  '공격 실습 방법, 악성코드 제작, 실제 공격 페이로드 등 악용 가능한 요청은 개념 설명만 하거나 status를 irrelevant로 처리하세요.'
+
+const FEW_SHOT = `[좋은 예시]
+입력: "방화벽"
+{"status":"success","term":"방화벽","definition":"규칙에 따라 네트워크 통신을 허용하거나 막는 장치","analogy":"건물 1층 로비의 경비 데스크와 같아요. 방문 목적과 출입증을 확인해 통과시킬 사람만 들여보내고, 목록에 없는 사람은 정중히 돌려보냅니다.","role":"네트워크 보안의 가장 기본적인 경계선입니다. 열어둘 필요가 없는 통로를 닫아 공격자가 두드릴 수 있는 문의 개수 자체를 줄여줍니다."}
+
+입력: "날씨"
+{"status":"irrelevant"}
+
+입력: "랜성웨어"
+{"status":"typo","suggestedTerm":"랜섬웨어"}`
 
 function buildPrompt(query: string, regenerate: boolean, variantIndex: number): string {
-  return `입력받은 용어: "${query}"
-${regenerate ? `(주의: 기존과 완전히 다른 새로운 비유 방식을 사용하세요. 시드 번호: ${variantIndex})` : ''}
+  return `${FEW_SHOT}
 
-다음 규칙에 따라 status 를 결정하세요:
+이제 아래 입력을 같은 형식으로 처리하세요.
+입력받은 용어: "${query}"
+${regenerate ? `(주의: 기존과 완전히 다른 새로운 일상 비유를 사용하세요. 시드 번호: ${variantIndex})` : ''}
 
-1) 보안과 무관한 단어("사과", "날씨", "축구" 등)  → {"status":"irrelevant"}
-2) 철자가 틀린 보안 용어로 추정("피슁"→"피싱")     → {"status":"typo","suggestedTerm":"정확한 보안 용어"}
-3) 올바른 보안 용어 또는 보안 분야 개념           → {
+규칙:
+1) 보안과 무관한 단어 → {"status":"irrelevant"}
+2) 철자가 틀린 보안 용어로 추정 → {"status":"typo","suggestedTerm":"정확한 보안 용어"}
+3) 올바른 보안 용어 또는 보안 분야 개념 → {
      "status":"success",
      "term":"정식 용어명",
-     "definition":"초보자 눈높이의 간결하고 명확한 한 줄 정의 (40자 이내)",
-     "analogy":"누구나 겪을 법한 구체적 일상 상황에 빗댄 비유 2~3문장",
-     "role":"실제 보안에서 왜 중요한지, 어떤 역할을 하는지 2문장"
+     "definition":"초보자 눈높이의 한 줄 정의 (한국어 45자 이내, 문장부호 최소화)",
+     "analogy":"누구나 겪을 법한 구체적 일상 상황에 빗댄 비유 2~3문장 (200자 이내)",
+     "role":"실제 보안에서 왜 중요한지·어떤 역할을 하는지 2문장 (140자 이내)"
    }`
 }
 
@@ -206,7 +297,12 @@ async function fetchFromGemini(
         parsed.analogy &&
         parsed.role
       ) {
-        console.log(`[Gemini] ✅ ${model} 성공 — query: "${query}" (${Date.now() - startedAt}ms)`)
+        const u = data.usageMetadata
+        console.log(
+          `[Gemini] ✅ ${model} 성공 — query: "${query}" (${Date.now() - startedAt}ms` +
+            (u ? `, tokens: ${u.promptTokenCount ?? '?'}+${u.candidatesTokenCount ?? '?'}` : '') +
+            ')'
+        )
         return {
           status: 'success',
           term: parsed.term || query,

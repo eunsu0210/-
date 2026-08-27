@@ -21,6 +21,7 @@ const REROLL_DELAY = 500
 type ResultData = {
   term: string
   explanation: Explanation
+  source?: 'ai' | 'fallback'
 }
 
 export function TermExplainer() {
@@ -29,6 +30,7 @@ export function TermExplainer() {
   const [view, setView] = useState<ViewState>('initial')
   const [emptyWarning, setEmptyWarning] = useState(false)
   const [resultData, setResultData] = useState<ResultData | null>(null)
+  const [errorMessage, setErrorMessage] = useState('')
   const [suggestion, setSuggestion] = useState('')
   const [variantIndex, setVariantIndex] = useState(0)
   const [isRerolling, setIsRerolling] = useState(false)
@@ -63,6 +65,7 @@ export function TermExplainer() {
 
       cancelRequest()
       setEmptyWarning(false)
+      setErrorMessage('')
       setQuery(rawQuery)
       setSubmitted(trimmed)
 
@@ -102,13 +105,14 @@ export function TermExplainer() {
 
         clearTimeout(timeoutId)
 
+        const data = await response.json().catch(() => null)
+
         if (!response.ok) {
+          setErrorMessage(data?.message || '')
           setView('error')
           setIsRerolling(false)
           return
         }
-
-        const data = await response.json()
 
         if (data.status === 'success' && data.term && data.definition && data.analogy && data.role) {
           setResultData({
@@ -118,6 +122,7 @@ export function TermExplainer() {
               analogy: data.analogy,
               role: data.role,
             },
+            source: data.source,
           })
           setVariantIndex(reqIndex)
           setView('result')
@@ -238,6 +243,7 @@ export function TermExplainer() {
             variantCount={variantIndex + 1}
             isRerolling={isRerolling}
             onReroll={handleReroll}
+            source={resultData.source}
           />
         ) : null}
 
@@ -256,7 +262,7 @@ export function TermExplainer() {
         ) : null}
 
         {view === 'error' ? (
-          <ErrorPanel onRetry={() => runSearch(submitted)} />
+          <ErrorPanel message={errorMessage} onRetry={() => runSearch(submitted)} />
         ) : null}
 
         {view === 'delayed' ? (
