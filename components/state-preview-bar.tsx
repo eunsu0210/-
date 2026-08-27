@@ -35,9 +35,9 @@ export function StatePreviewBar({ current, onSelect }: StatePreviewBarProps) {
   const [open, setOpen] = useState(true)
 
   return (
-    <aside className="rounded-2xl border border-dashed border-border bg-secondary/50 p-4">
+    <aside className="rounded-2xl border border-dashed border-outline-variant/50 bg-surface-container/60 p-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+        <p className="flex items-center gap-2 text-xs font-bold text-on-surface-variant">
           <FlaskConical className="size-4" aria-hidden="true" />
           상태 미리보기 (데모 · 디자인 리뷰용)
         </p>

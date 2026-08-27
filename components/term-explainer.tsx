@@ -199,21 +199,31 @@ export function TermExplainer() {
     [cancelRequest, runSearch]
   )
 
+  // 디자인 리뷰용: /explore?state=result|error|typo|irrelevant|delayed|loading
+  // (개발 환경에서만 동작 — 프로덕션 빌드에서는 무시)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return
+    const s = new URLSearchParams(window.location.search).get('state')
+    if (s) handlePreview(s as ViewState)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10 font-inter sm:px-6 sm:py-14">
       <header className="flex flex-col items-start gap-3">
-        <span className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
+        <span className="flex items-center gap-2 rounded-full bg-brand/10 px-3 py-1.5 text-xs font-bold text-brand">
           <ShieldQuestionMark className="size-4" aria-hidden="true" />
           보안 입문자를 위한 비유 사전
         </span>
-        <h1 className="font-serif text-3xl leading-tight text-balance text-foreground sm:text-4xl">
-          어려운 보안 용어, 아는 이야기로 바꿔서 알려드려요
+        <h1 className="text-3xl leading-tight font-bold tracking-tight text-balance text-on-surface sm:text-4xl">
+          어려운 보안 용어, <span className="text-mint">아는 이야기</span>로 바꿔서
+          알려드려요
         </h1>
       </header>
 
       <section
         aria-label="용어 검색"
-        className="sticky top-0 z-10 -mx-4 bg-background/85 px-4 pt-4 pb-1 backdrop-blur-md sm:-mx-6 sm:px-6"
+        className="sticky top-0 z-10 -mx-4 bg-surface/85 px-4 pt-4 pb-1 backdrop-blur-md sm:-mx-6 sm:px-6"
       >
         <SearchBar
           value={query}

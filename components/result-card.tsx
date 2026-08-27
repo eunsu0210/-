@@ -30,24 +30,24 @@ export function ResultCard({
   source,
 }: ResultCardProps) {
   return (
-    <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-[0_1px_0_oklch(0.9_0.02_225),0_16px_40px_-20px_oklch(0.5_0.08_240/0.35)] transition-shadow duration-300 hover:shadow-[0_1px_0_oklch(0.9_0.02_225),0_20px_48px_-16px_oklch(0.5_0.08_240/0.45)]">
+    <article className="overflow-hidden rounded-3xl border border-outline-variant/40 bg-surface-lowest shadow-[0px_4px_20px_rgba(26,35,126,0.06)] transition-shadow duration-300 hover:shadow-[0px_10px_32px_rgba(26,35,126,0.1)]">
       {/* 카드 헤더 */}
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border bg-gradient-to-br from-primary/8 via-secondary/60 to-secondary/30 px-6 py-5 sm:px-8">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-outline-variant/40 bg-surface-container px-6 py-5 sm:px-8">
         <div>
-          <p className="mb-1 flex items-center gap-1.5 text-xs font-bold tracking-widest text-primary uppercase">
-            <span className="inline-block size-1.5 rounded-full bg-primary" />
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-bold tracking-widest text-brand uppercase">
+            <span className="inline-block size-1.5 rounded-full bg-brand" />
             보안 용어
           </p>
-          <h2 className="font-serif text-3xl leading-tight text-balance text-card-foreground sm:text-4xl">
+          <h2 className="text-3xl leading-tight font-bold tracking-tight text-balance text-on-surface sm:text-4xl">
             {term}
           </h2>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          <p className="rounded-full bg-primary/8 px-3 py-1 text-xs font-semibold text-primary">
+          <p className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">
             설명 {variantIndex + 1} / {variantCount}
           </p>
           {source === 'fallback' ? (
-            <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+            <span className="rounded-full bg-surface-container px-2.5 py-0.5 text-[11px] font-medium text-on-surface-variant">
               사전 기반 설명
             </span>
           ) : null}
@@ -64,32 +64,32 @@ export function ResultCard({
           <div className="flex flex-col gap-5" aria-hidden="true">
             {/* 정의 스켈레톤 */}
             <div className="flex gap-4">
-              <div className="size-10 shrink-0 animate-pulse rounded-xl bg-primary/10" />
+              <div className="size-10 shrink-0 animate-pulse rounded-xl bg-brand/10" />
               <div className="flex flex-1 flex-col gap-2 pt-1">
-                <div className="h-3.5 w-20 animate-pulse rounded-full bg-muted" />
-                <div className="h-4 w-full animate-pulse rounded-lg bg-muted" />
-                <div className="h-4 w-4/5 animate-pulse rounded-lg bg-muted" />
+                <div className="h-3.5 w-20 animate-pulse rounded-full bg-surface-container" />
+                <div className="h-4 w-full animate-pulse rounded-lg bg-surface-container" />
+                <div className="h-4 w-4/5 animate-pulse rounded-lg bg-surface-container" />
               </div>
             </div>
             {/* 비유 스켈레톤 */}
-            <div className="flex flex-col gap-3 rounded-2xl bg-amber-50/60 p-5 sm:p-6">
+            <div className="flex flex-col gap-3 rounded-2xl bg-mint/[0.06] p-5 sm:p-6">
               <div className="flex items-center gap-2.5">
-                <div className="size-9 animate-pulse rounded-xl bg-amber-200/60" />
-                <div className="h-3.5 w-28 animate-pulse rounded-full bg-amber-200/60" />
+                <div className="size-9 animate-pulse rounded-xl bg-mint/20" />
+                <div className="h-3.5 w-28 animate-pulse rounded-full bg-mint/20" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <div className="h-4 w-full animate-pulse rounded-lg bg-amber-200/50" />
-                <div className="h-4 w-full animate-pulse rounded-lg bg-amber-200/50" />
-                <div className="h-4 w-3/4 animate-pulse rounded-lg bg-amber-200/50" />
+                <div className="h-4 w-full animate-pulse rounded-lg bg-mint/15" />
+                <div className="h-4 w-full animate-pulse rounded-lg bg-mint/15" />
+                <div className="h-4 w-3/4 animate-pulse rounded-lg bg-mint/15" />
               </div>
             </div>
             {/* 역할 스켈레톤 */}
             <div className="flex gap-4">
-              <div className="size-10 shrink-0 animate-pulse rounded-xl bg-primary/10" />
+              <div className="size-10 shrink-0 animate-pulse rounded-xl bg-brand/10" />
               <div className="flex flex-1 flex-col gap-2 pt-1">
-                <div className="h-3.5 w-32 animate-pulse rounded-full bg-muted" />
-                <div className="h-4 w-full animate-pulse rounded-lg bg-muted" />
-                <div className="h-4 w-4/5 animate-pulse rounded-lg bg-muted" />
+                <div className="h-3.5 w-32 animate-pulse rounded-full bg-surface-container" />
+                <div className="h-4 w-full animate-pulse rounded-lg bg-surface-container" />
+                <div className="h-4 w-4/5 animate-pulse rounded-lg bg-surface-container" />
               </div>
             </div>
           </div>
@@ -97,49 +97,49 @@ export function ResultCard({
           <>
             {/* ① 한 줄 정의 */}
             <section className="flex gap-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand ring-1 ring-brand/15">
                 <Sparkles className="size-5" aria-hidden="true" />
               </span>
               <div className="flex flex-col gap-1">
-                <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                <h3 className="text-xs font-bold tracking-wide text-on-surface-variant uppercase">
                   한 줄 정의
                 </h3>
-                <p className="text-base leading-relaxed text-pretty text-card-foreground">
+                <p className="text-base leading-relaxed text-pretty text-on-surface">
                   {explanation.definition}
                 </p>
               </div>
             </section>
 
-            {/* ② 일상 비유 설명 — 앰버 글래스모피즘 */}
-            <section className="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 via-amber-50/80 to-yellow-50/50 p-5 shadow-[inset_0_1px_0_oklch(0.92_0.05_80/0.6)] sm:p-6">
+            {/* ② 일상 비유 설명 — 민트 강조 박스 */}
+            <section className="relative overflow-hidden rounded-2xl border border-mint/25 bg-mint/[0.06] p-5 sm:p-6">
               {/* 배경 장식 */}
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-4 -bottom-4 size-24 rounded-full bg-amber-200/25 blur-2xl"
+                className="pointer-events-none absolute -top-6 -right-6 size-24 rounded-bl-full bg-mint/10"
               />
               <div className="relative flex items-center gap-2.5 pb-3">
-                <span className="flex size-9 items-center justify-center rounded-xl bg-amber-400/20 text-amber-700 ring-1 ring-amber-300/40">
+                <span className="flex size-9 items-center justify-center rounded-xl bg-mint-container/40 text-mint ring-1 ring-mint/25">
                   <Lightbulb className="size-5" aria-hidden="true" />
                 </span>
-                <h3 className="text-sm font-bold text-amber-800">
+                <h3 className="text-sm font-bold text-mint">
                   일상 비유로 이해하기
                 </h3>
               </div>
-              <p className="relative text-base leading-relaxed text-pretty text-amber-900/85">
+              <p className="relative text-base leading-relaxed text-pretty text-on-surface">
                 {explanation.analogy}
               </p>
             </section>
 
             {/* ③ 실제 보안에서의 역할 */}
             <section className="flex gap-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand ring-1 ring-brand/15">
                 <ShieldCheck className="size-5" aria-hidden="true" />
               </span>
               <div className="flex flex-col gap-1">
-                <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">
+                <h3 className="text-xs font-bold tracking-wide text-on-surface-variant uppercase">
                   실제 보안에서의 역할
                 </h3>
-                <p className="text-base leading-relaxed text-pretty text-card-foreground">
+                <p className="text-base leading-relaxed text-pretty text-on-surface">
                   {explanation.role}
                 </p>
               </div>
@@ -149,12 +149,12 @@ export function ResultCard({
       </div>
 
       {/* 카드 푸터 */}
-      <footer className="border-t border-border bg-secondary/40 px-6 py-4 sm:px-8">
+      <footer className="border-t border-outline-variant/40 bg-surface-container/50 px-6 py-4 sm:px-8">
         <Button
           variant="outline"
           onClick={onReroll}
           disabled={isRerolling}
-          className="h-11 w-full rounded-xl border-2 text-sm font-bold transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 hover:text-primary sm:w-auto"
+          className="h-11 w-full rounded-xl border-2 text-sm font-bold transition-all duration-200 hover:border-brand/40 hover:bg-brand/5 hover:text-brand sm:w-auto"
         >
           {isRerolling ? (
             <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
