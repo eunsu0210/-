@@ -1,14 +1,17 @@
 # 보안 용어 쉬운 비유 설명 서비스 — 개발 계획서 (Development Plan)
 
-> **문서 버전**: v1.1.0  
-> **최종 수정일**: 2026-08-27  
-> **기반 문서**: [PRD.md](../PRD.md)
+> **문서 버전**: v1.2.0  
+> **최종 수정일**: 2026-08-27 (전체 스프린트 완료)  
+> **기반 문서**: [PRD.md](../PRD.md)  
+> **프로젝트 상태**: ✅ 전체 Sprint 1시4 완료
 
 ---
 
 ## 1. 개요 (Overview)
 
 본 개발 계획서는 `PRD.md`에 정의된 요구사항을 바탕으로, **보안 전공 초보자 및 교육생을 위한 단일 화면 보안 용어 비유 설명 서비스**를 단계별(스프린트 단위)로 구축하기 위한 구체적인 가이드를 제공합니다.
+
+> **프로젝트 현황**: 2026-08-27 기준 Sprint 1시4 전체 완료. 배포 가능 상태.
 
 ---
 
@@ -119,3 +122,48 @@ gantt
 
 - 본 계획서는 개발 진행 상황에 맞춰 `docs/` 디렉토리 내에서 업데이트됩니다.
 - 각 스프린트 완료 시 `walkthrough.md`에 시각적 verification 결과를 기록합니다.
+
+---
+
+## 5. 전체 프로젝트 완료 요약 (Final Status)
+
+> **추진 일자**: 2026-08-26 시작 → 2026-08-27 완료  
+> **Git 코미트**: `3707e74` (main 브랜치 푸시 완료)
+
+| 스프린트 | 한 줄 요약 | 상태 |
+|----------|------------|------|
+| Sprint 1 | 기반 설정 & 단일 화면 UI 레이아웃 | ✅ 완료 |
+| Sprint 2 | Gemini AI 연동 & `/api/explain` Route | ✅ 완료 |
+| Sprint 3 | 예외 처리 6종 (PRD 5-1시5-6) 완비 | ✅ 완료 |
+| Sprint 4 | Visual Polish, Micro-animations & QA 검증 | ✅ 완료 |
+
+### 파일 구성 (해당 코드)
+
+```
+보안 용어 학습기/
+├─ app/
+│   ├─ page.tsx              # 메인 페이지 (TermExplainer 마운트)
+│   ├─ layout.tsx            # 폰트, SEO 메타데이터
+│   ├─ globals.css           # 시스템 토큰, 콌러, 애니메이션
+│   └─ api/explain/route.ts  # POST /api/explain (Gemini + Fallback)
+├─ components/
+│   ├─ term-explainer.tsx    # 상태 머신 코어 (runSearch, AbortController)
+│   ├─ search-bar.tsx        # 검색창, Enter 키 IME 처리, 빈 입력 경고
+│   ├─ result-card.tsx       # 3요소 결과 카드, 스켈레톤, Reroll
+│   ├─ state-panels.tsx      # Initial/Loading/Irrelevant/Typo/Error/Delayed
+│   └─ state-preview-bar.tsx # 데모용 상태 전환 툴바
+├─ lib/
+│   ├─ mock-terms.ts         # 로여 Fallback 사전
+│   └─ utils.ts              # cn() 헬퍼
+└─ docs/
+    ├─ development-plan.md   # 본 문서
+    └─ (walkthrough.md)      # 스프린트별 검증 결과 기록
+```
+
+### 환경 변수
+
+| 변수명 | 설명 | 필수 여부 |
+|---------|------|----------|
+| `GEMINI_API_KEY` | Google Gemini API 키 | 선택 (미설정 시 Fallback 자동 적용) |
+
+> 환경 변수 예시는 `.env.example` 산참.
