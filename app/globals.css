@@ -40,6 +40,26 @@
     sans-serif;
   --font-display: 'Outfit', 'Noto Sans KR', sans-serif;
   --font-serif: 'Gowun Batang', 'Apple SD Gothic Neo', ui-serif, serif;
+
+  /* ── code.html 참조: Material Design 3 톤 (랜딩 페이지 전용, 향후 전체 확장 예정) ── */
+  --font-inter: 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', ui-sans-serif,
+    system-ui, sans-serif;
+  --color-surface: #f7f9fc;
+  --color-surface-lowest: #ffffff;
+  --color-surface-low: #f2f4f7;
+  --color-surface-container: #eceef1;
+  --color-surface-container-high: #e6e8eb;
+  --color-surface-variant: #e0e3e6;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #454652;
+  --color-outline: #767683;
+  --color-outline-variant: #c6c5d4;
+  --color-brand: #000666;
+  --color-brand-container: #1a237e;
+  --color-brand-fixed: #e0e0ff;
+  --color-mint: #006b5c;
+  --color-mint-container: #68fadd;
+  --color-danger: #ba1a1a;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
