@@ -80,6 +80,18 @@ export function LoadingPanel() {
   )
 }
 
+function formatParticle(word: string, type: '은는' | '을를') {
+  if (!word) return type === '은는' ? '은(는)' : '을(를)'
+  const lastChar = word.charCodeAt(word.length - 1)
+  // Hangul Syllables: 0xAC00 ~ 0xD7A3
+  if (lastChar >= 0xac00 && lastChar <= 0xd7a3) {
+    const hasBatchim = (lastChar - 0xac00) % 28 > 0
+    if (type === '은는') return hasBatchim ? `${word}은` : `${word}는`
+    if (type === '을를') return hasBatchim ? `${word}을` : `${word}를`
+  }
+  return type === '은는' ? `${word}은(는)` : `${word}를`
+}
+
 export function IrrelevantPanel({
   query,
   onPick,
@@ -87,14 +99,15 @@ export function IrrelevantPanel({
   query: string
   onPick: (term: string) => void
 }) {
+  const formattedWord = formatParticle(query, '은는')
   return (
     <Panel>
       <span className="flex size-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
         <SearchX className="size-8" aria-hidden="true" />
       </span>
       <p className="max-w-md text-base leading-relaxed text-pretty text-card-foreground">
-        <span className="font-bold">{`'${query}'`}</span>
-        은(는) 보안 용어로 보이지 않아요. 다른 용어로 다시 검색해보세요.
+        <span className="font-bold">{`'${formattedWord}'`}</span>
+        {' '}보안 용어로 보이지 않아요. 다른 용어로 다시 검색해보세요.
       </p>
       <p className="text-sm text-muted-foreground">이런 용어는 어떠세요?</p>
       <TermChips onPick={onPick} />
@@ -109,14 +122,15 @@ export function TypoPanel({
   suggestion: string
   onConfirm: (term: string) => void
 }) {
+  const formattedSuggestion = formatParticle(suggestion, '을를')
   return (
     <Panel>
       <span className="flex size-16 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
         <CircleQuestionMark className="size-8" aria-hidden="true" />
       </span>
       <p className="text-lg leading-relaxed text-card-foreground">
-        혹시 <span className="font-bold text-primary">{`'${suggestion}'`}</span>
-        를 찾으시나요?
+        혹시 <span className="font-bold text-primary">{`'${formattedSuggestion}'`}</span>
+        {' '}찾으시나요?
       </p>
       <Button
         onClick={() => onConfirm(suggestion)}
