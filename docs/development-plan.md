@@ -1,9 +1,14 @@
 # 보안 용어 쉬운 비유 설명 서비스 — 개발 계획서 (Development Plan)
 
-> **문서 버전**: v1.2.0  
-> **최종 수정일**: 2026-08-27 (전체 스프린트 완료)  
-> **기반 문서**: [PRD.md](../PRD.md)  
-> **프로젝트 상태**: ✅ 전체 Sprint 1시4 완료
+> **문서 버전**: v1.3.0  
+> **최종 수정일**: 2026-08-27 (실제 Gemini 키 도입 후 AI 경로 재정비)  
+> **기반 문서**: [PRD.md](../PRD.md) · [ai-enablement-plan.md](./ai-enablement-plan.md)  
+> **프로젝트 상태**: ✅ Sprint 1~4 UI/UX 완료 · ✅ Sprint 5 (AI 실경로 활성화) 완료 · ⬜ Sprint 6~7 예정
+
+> ⚠️ **정정 (2026-08-27)**: Sprint 2 에서 "완료"로 표기했던 Gemini 연동은 실제 키 투입 시 동작하지 않았다
+> (존재하지 않는 모델명, `v1` 엔드포인트, 키가 `.gitignore` 밖 `.env` 에 노출 등). 원인·조치·검증 결과는
+> [ai-enablement-plan.md](./ai-enablement-plan.md) 참조. 현재는 `gemini-flash-lite-latest` 로 실 AI 응답이
+> 1~2초 내 생성되는 것을 확인함.
 
 ---
 
@@ -136,6 +141,9 @@ gantt
 | Sprint 2 | Gemini AI 연동 & `/api/explain` Route | ✅ 완료 |
 | Sprint 3 | 예외 처리 6종 (PRD 5-1시5-6) 완비 | ✅ 완료 |
 | Sprint 4 | Visual Polish, Micro-animations & QA 검증 | ✅ 완료 |
+| Sprint 5 | 실제 Gemini 키 도입 · AI 경로 활성화 · 시크릿 하드닝 | ✅ 완료 (2026-08-27) |
+| Sprint 6 | 품질·비용·레이트리밋·폴백 사전 확장 | ⬜ 예정 |
+| Sprint 7 | 배포 환경변수·키 회전·모니터링·부하 테스트 | ⬜ 예정 |
 
 ### 파일 구성 (해당 코드)
 
@@ -164,6 +172,7 @@ gantt
 
 | 변수명 | 설명 | 필수 여부 |
 |---------|------|----------|
-| `GEMINI_API_KEY` | Google Gemini API 키 | 선택 (미설정 시 Fallback 자동 적용) |
+| `GEMINI_API_KEY` | Google Gemini API 키. **`.env.local` 에 저장** (`.env` 아님 — `.gitignore` 처리됨). `AQ.Ab8...` / `AIza...` 형식 모두 지원 | 선택 (미설정 시 로컬 사전 Fallback 자동 적용) |
+| `GEMINI_MODELS` | 모델 우선순위 쉼표 오버라이드. 미설정 시 `gemini-flash-lite-latest,gemini-3.6-flash` | 선택 |
 
-> 환경 변수 예시는 `.env.example` 산참.
+> 템플릿은 `.env.example`. 실제 키는 `.env.local`. 상세 운영 가이드는 [ai-enablement-plan.md](./ai-enablement-plan.md).
