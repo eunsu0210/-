@@ -52,7 +52,7 @@ export function SearchBar({
             className={cn(
               'h-14 w-full rounded-2xl border-2 border-border bg-card pl-12 pr-4 text-base text-card-foreground shadow-sm outline-none transition-all placeholder:text-muted-foreground/80 focus:border-primary focus:ring-4 focus:ring-primary/15',
               showEmptyWarning &&
-                'border-destructive bg-destructive/5 ring-4 ring-destructive/15',
+                'border-destructive bg-destructive/5 ring-4 ring-destructive/15 animate-shake',
             )}
           />
         </div>

@@ -172,3 +172,19 @@ export function DelayedPanel({ onRetry }: { onRetry: () => void }) {
     </Panel>
   )
 }
+
+export type StatusIndicatorProps = {
+  status: 'loading' | 'error' | 'delayed'
+  onRetry?: () => void
+}
+
+export function StatusIndicator({ status, onRetry }: StatusIndicatorProps) {
+  if (status === 'loading') {
+    return <LoadingPanel />
+  }
+  if (status === 'delayed') {
+    return <DelayedPanel onRetry={onRetry || (() => {})} />
+  }
+  return <ErrorPanel onRetry={onRetry || (() => {})} />
+}
+
